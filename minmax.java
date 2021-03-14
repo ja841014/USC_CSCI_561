@@ -22,7 +22,7 @@ public class minmax {
 		// SINGLE OR GAME
 		String mode = scanner.next();
 		// BLACK or WHITE
-		String color = scanner.next();
+		String myColor = scanner.next();
 		float remainTime = Float.parseFloat(scanner.next());
 		// Build up the board information 
 		Board board = new Board();
@@ -34,29 +34,27 @@ public class minmax {
 		
 		// Get all our side piece
 		List<Node> ls;
+		String opponentColor = "";
 		boolean myTurn;
-		if(color.equals("BLACK")) {
-//			ls = board.getBlackLs();
+		if(myColor.equals("BLACK")) {
+			opponentColor = "WHITE";
 			myTurn = true;
 		}
 		else {
-//			ls = board.getWhiteLs() ;
 			myTurn = false;
+			opponentColor = "BLACK";
 		}
 				
-		Board resultBoard = minimax(2, myTurn, board);
+		Board resultBoard = minimax(2, myTurn, myColor, opponentColor, board);
 		List<String> path =  resultBoard.map.get(resultBoard.endNode).paths;
 		for(String s:  path) {
 			System.out.println(s);
-		}
-		
-		
-		
+		}		
 		
 		
 	}
 	
-	private static Board minimax(int depth, boolean myTurn, Board board) {
+	private static Board minimax(int depth, boolean myTurn, String myColor, String opponentColor, Board board) {
 		if(depth == 0) {
 			board.statsFunc();
 			board.eval();
@@ -65,9 +63,10 @@ public class minmax {
 		if(myTurn) {
 			int maxEval = Integer.MIN_VALUE;
 			Board bestMove= null;
-			List<Node> ls = board.blackLs;
+			List<Node> ls = determineColor(board, myColor, opponentColor);
+			
 			for(Board curBoard: getAllMoves(board, ls)) {
-				Board tmp = minimax(depth - 1, false, curBoard);
+				Board tmp = minimax(depth - 1, false, myColor, opponentColor, curBoard);
 				maxEval = Math.max(maxEval, tmp.eval);
 				if(maxEval == tmp.eval) {
 					bestMove = curBoard;
@@ -78,9 +77,10 @@ public class minmax {
 		else {
 			int minEval = Integer.MAX_VALUE;
 			Board bestMove= null;
-			List<Node> ls = board.whiteLs;
+			List<Node> ls = determineColor(board, myColor, opponentColor);
+			
 			for(Board curBoard: getAllMoves(board, ls)) {
-				Board tmp = minimax(depth - 1, true, curBoard);
+				Board tmp = minimax(depth - 1, true, myColor, opponentColor, curBoard);
 				minEval = Math.min(minEval, tmp.eval);
 				if(minEval == tmp.eval) {
 					bestMove = curBoard;
@@ -90,7 +90,17 @@ public class minmax {
 		}
 	}
 	
-	// dummy
+	private static List<Node> determineColor(Board board, String myColor, String opponentColor) {
+		List<Node> ls;
+		if(myColor.equals("WHITE")) {
+			ls = board.whiteLs;
+		}
+		else {
+			ls = board.blackLs;
+		}
+		return ls;
+	}
+	
 	
 	private static List<Board> getAllMoves(Board board, List<Node> ls) {
 		List<Board> nextMoveBoards = new ArrayList<>();
@@ -98,8 +108,13 @@ public class minmax {
 		for (Node curNode: ls) {
 			// get this node all valid moves
 			nextMoveBoards.addAll(validMoves(board, curNode));
-			
+//			System.out.println(curNode.row + "," + curNode.col);
+//			for(Board b : nextMoveBoards) {
+//				b.print();
+//				System.out.println();
+//			}
 		}
+		
 		return nextMoveBoards;
 	}
 	
@@ -112,311 +127,512 @@ public class minmax {
 		String color = curNode.color;
 		String curPos = curNode.row + "," + curNode.col;
 		boolean isKing = curNode.isKing;
-		if(color.equals("BLACK")) {
+		if(color.equals("BLACK") && isKing == false) {
 			List<String> jumpOverLeft = new ArrayList<>();
 			List<String> pathLeft = new ArrayList<>();
 			List<String> jumpOverRight = new ArrayList<>();
 			List<String> pathRight = new ArrayList<>();
 			pathLeft.add(curPos);
 			pathRight.add(curPos);
-			List<Board> tmpLeft = goLeft(color, isKing, curNode.row, curNode.col, curboard, false, jumpOverLeft, pathLeft);
-			List<Board> tmpRight = goRight(color, isKing, curNode.row, curNode.col, curboard, false, jumpOverRight, pathRight);
-			if(tmpLeft != null) {
-				validPosBoards.addAll(tmpLeft);
+			
+			List<Board> tmpLeftJump = goJump(color,1, -1, isKing, curNode.row, curNode.col, curboard, jumpOverLeft, pathLeft);
+			List<Board> tmpRightJump = goJump(color,1, 1,isKing, curNode.row, curNode.col, curboard, jumpOverRight, pathRight);
+			if(tmpLeftJump.isEmpty()&& tmpRightJump.isEmpty()) {
+				List<Board> tmpLeft = go(color, 1, -1, isKing, curNode.row, curNode.col, curboard, jumpOverLeft, pathLeft);
+				List<Board> tmpRight = go(color, 1, 1, isKing, curNode.row, curNode.col, curboard, jumpOverRight, pathRight);
+//				if(tmpLeft != null) {
+					validPosBoards.addAll(tmpLeft);
+//				}
+//				if(tmpRight != null) {
+					validPosBoards.addAll(tmpRight);
+//				}
 			}
-			if(tmpRight != null) {
-				validPosBoards.addAll(tmpRight);
-			}			
+			else {
+//				if(tmpLeftJump != null) {
+					validPosBoards.addAll(tmpLeftJump);
+//				}
+//				if(tmpRightJump != null) {
+					validPosBoards.addAll(tmpRightJump);
+//				}
+			}
+						
 		}
-		else {
+		else if(color.equals("WHITE") && isKing == false) {
 			List<String> jumpOverLeft = new ArrayList<>();
 			List<String> pathLeft = new ArrayList<>();
 			List<String> jumpOverRight = new ArrayList<>();
 			List<String> pathRight = new ArrayList<>();
 			pathLeft.add(curPos);
 			pathRight.add(curPos);
-			List<Board> tmpLeft = goLeft(color, isKing, curNode.row, curNode.col, curboard, false, jumpOverLeft, pathLeft);
-			List<Board> tmpRight = goRight(color, isKing, curNode.row, curNode.col, curboard, false, jumpOverRight, pathRight);
-			if(tmpLeft != null) {
-				validPosBoards.addAll(tmpLeft);
+
+			List<Board> tmpLeftJump = goJump(color, -1, -1, isKing, curNode.row, curNode.col, curboard, jumpOverLeft, pathLeft);
+			List<Board> tmpRightJump = goJump(color, -1, 1,isKing, curNode.row, curNode.col, curboard, jumpOverRight, pathRight);
+			if(tmpLeftJump.isEmpty() && tmpRightJump.isEmpty()) {
+				List<Board> tmpLeft = go(color, -1, -1, isKing, curNode.row, curNode.col, curboard, jumpOverLeft, pathLeft);
+				List<Board> tmpRight = go(color, -1, 1, isKing, curNode.row, curNode.col, curboard, jumpOverRight, pathRight);
+//				if(tmpLeft != null) {
+					validPosBoards.addAll(tmpLeft);
+//				}
+//				if(tmpRight != null) {
+					validPosBoards.addAll(tmpRight);
+//				}
 			}
-			if(tmpRight != null) {
-				validPosBoards.addAll(tmpRight);
+			else {
+//				if(tmpLeftJump != null) {
+					validPosBoards.addAll(tmpLeftJump);
+//				}
+//				if(tmpRightJump != null) {
+					validPosBoards.addAll(tmpRightJump);
+//				}
 			}
 		}
-		// dummy
+		else if(isKing) {
+//			List<String> jumpOverLeft = new ArrayList<>();
+			List<String> pathUpLeft = new ArrayList<>();
+			List<String> pathDownLeft = new ArrayList<>();
+//			List<String> jumpOverRight = new ArrayList<>();
+			List<String> pathUpRight = new ArrayList<>();
+			List<String> pathDownRight = new ArrayList<>();
+			pathUpLeft.add(curPos);
+			pathDownLeft.add(curPos);
+			pathUpRight.add(curPos);
+			pathDownRight.add(curPos);
+
+			List<Board> tmpUpLeftJump = goJumpKing(color, -1, -1, isKing, curNode.row, curNode.col, curboard, new ArrayList<>(), pathUpLeft);
+			List<Board> tmpUpRightJump = goJumpKing(color, -1, 1,isKing, curNode.row, curNode.col, curboard, new ArrayList<>(), pathUpRight);
+			List<Board> tmpDownLeftJump = goJumpKing(color,1, -1, isKing, curNode.row, curNode.col, curboard, new ArrayList<>(), pathDownLeft);
+			List<Board> tmpDownRightJump = goJumpKing(color,1, 1,isKing, curNode.row, curNode.col, curboard, new ArrayList<>(), pathDownRight);
+			if(tmpUpLeftJump.isEmpty() && tmpUpRightJump.isEmpty() && tmpDownLeftJump.isEmpty() && tmpDownRightJump.isEmpty()) {
+				List<Board> tmpUpLeft = go(color, -1, -1, isKing, curNode.row, curNode.col, curboard, new ArrayList<>(), pathUpLeft);
+				List<Board> tmpUpRight = go(color, -1, 1, isKing, curNode.row, curNode.col, curboard, new ArrayList<>(), pathUpRight);
+				List<Board> tmpDownLeft = go(color, 1, -1, isKing, curNode.row, curNode.col, curboard, new ArrayList<>(), pathDownLeft);
+				List<Board> tmpDownRight = go(color, 1, 1, isKing, curNode.row, curNode.col, curboard, new ArrayList<>(), pathDownRight);
+				validPosBoards.addAll(tmpUpLeft);
+				validPosBoards.addAll(tmpUpRight);
+				validPosBoards.addAll(tmpDownLeft);
+				validPosBoards.addAll(tmpDownRight);
+			}
+			else {
+				validPosBoards.addAll(tmpUpLeftJump);
+				validPosBoards.addAll(tmpUpRightJump);
+				validPosBoards.addAll(tmpDownLeftJump);
+				validPosBoards.addAll(tmpDownRightJump);
+			}
+		}
+		
+		
 		return validPosBoards;
 	}
-	
-	
-	private static List<Board> goLeft(String color, boolean isKing, int row, int col, Board curboard, boolean continuousJump, List<String> jumpOver, List<String> path) {
+	// 黑色左是+1 -1 黑色又是 +1 +1 白色左是 -1 -1 白色右是 -1 +1
+	private static List<Board> goJump(String color, int rowScalar, int colScalar, boolean isKing, int row, int col, Board curboard,  List<String> jumpOver, List<String> path) {
 		List<Board> result = new ArrayList<>();
-//		int row = curNode.row;
-//		int col = curNode.col;
-		String curStep = row + "," + col;
-		if(color.equals("BLACK")) {
-			int nextStepRow = row + 1;
-			int nextStepCol = col - 1;
-			String nextStep = nextStepRow + "," + nextStepCol;
-			
-			// first, check whether there is something can eat
-			if( isValidPos(row + 1, col - 1) ) {
-				if(isMeetEnemy(curboard, row + 1, col - 1, isKing, color) ) {
-					// 若遇到連續敵軍 或 卡牆 都不能走
-					if( isValidPos( row + 2, col - 2) == false|| isMeetEnemy(curboard, row + 2, col - 2, isKing, color) == true ) {
-						return null;
-					}
-					// 確定可以吃一顆旗子
-					else {
-						
-						// 還有一個判斷式要判斷是不是走到底要變身ＫＩＮＧ
-						// 把所有被跳得點存起來,之後board清除掉
-						jumpOver.add(nextStep);
-						
-						int nnRow = row + 2;
-						int nnCol = col - 2;
-						
-						path.add(nnRow + "," + nnCol);
-						List<Board> tmpLeft = goLeft(color, isKing, row + 2, col - 2, curboard, true, jumpOver, path);
-						
-						List<Board> tmpRight = goRight(color, isKing, row + 2, col - 2, curboard, true, jumpOver, path);
-						// 這個可能不需要
-						path.remove(path.size() - 1);
-						
-						if(tmpLeft == null && tmpRight == null) {
-							path.add(nnRow + "," + nnCol);
-							Board newBoard = new Board();
-							setUpNewBoard(newBoard, curboard.map, path.get(0), path.get(path.size() - 1), nnRow, nnCol, jumpOver, path);
-							result.add(newBoard);
-							return result;
-							
-						}
-						else {
-							result.addAll(tmpLeft);
-							result.addAll(tmpRight);
-							return result;
-						}
-					}
-				}
-				// simple step out, the nextStep is valid and empty position
-				else if(curboard.map.containsKey(nextStep) == false && continuousJump == false ) {
-					// change map
-					path.add(nextStep);
-					Board newBoard = new Board();
-					setUpNewBoard(newBoard, curboard.map, curStep, nextStep, nextStepRow, nextStepCol, null, path);
-					result.add(newBoard);
+	 
+		int nextStepRow = row + rowScalar;
+		int nextStepCol = col + colScalar;
+		String nextStep = nextStepRow + "," + nextStepCol;
+		
+		// first, check whether there is something can eat
+		if( isValidPos(nextStepRow, nextStepCol) && isMeetEnemy(curboard, nextStepRow, nextStepCol, isKing, color) ) {
+			// 若遇到連續敵軍 或 卡牆 都不能走
+			if( isValidPos( row + 2 * rowScalar, col + 2 * colScalar) == false || isMeetEnemy(curboard, row + 2 * rowScalar, col + 2 * colScalar, isKing, color) == true ) {
+				return result;
+			}
+			// 確定可以吃一顆旗子
+			else {
+				if(jumpOver.contains(nextStep)) {
 					return result;
 				}
-				else {
-					return null;
+				// 還有一個判斷式要判斷是不是走到底要變身ＫＩＮＧ
+				// 把所有被跳得點存起來,之後board清除掉
+				jumpOver.add(nextStep);
+				
+				int nnRow = row + 2 * rowScalar;
+				int nnCol = col + 2 * colScalar;
+				
+				path.add(nnRow + "," + nnCol);
+				List<Board> tmpLeft = new ArrayList<>();
+				List<Board> tmpRight = new ArrayList<>();
+				
+				if(color.equals("BLACK") && isKing == false) {
+					tmpLeft = goJump(color, 1, -1, isKing, nnRow, nnCol, curboard, jumpOver, path);
+					tmpRight = goJump(color, 1, 1, isKing, nnRow, nnCol, curboard, jumpOver, path);
 				}
-			}
-			else {
-				return null;
-			}
-		}
-		// color = WHITE
-		else {
-			int nextStepRow = row - 1;
-			int nextStepCol = col - 1;
-			String nextStep = nextStepRow + "," + nextStepCol;
-			
-			// first, check whether there is something can eat
-			if( isValidPos(row - 1, col - 1) ) {
-				if(isMeetEnemy(curboard, row - 1, col - 1, isKing, color) ) {
-					// 若遇到連續敵軍 或 卡牆 都不能走
-					if( isValidPos( row - 2, col - 2) || isMeetEnemy(curboard, row - 2, col - 2, isKing, color) ) {
-						return null;
-					}
-					// 確定可以吃一顆旗子
-					else {
-						// 把所有被跳得點存起來,之後board清除掉
-						jumpOver.add(nextStep);
-						
-						int nnRow = row - 2;
-						int nnCol = col - 2;
-						
-						path.add(nnRow + "," + nnCol);
-						List<Board> tmpLeft = goLeft(color, isKing, row - 2, col - 2, curboard, true, jumpOver, path);
-						
-						List<Board> tmpRight = goRight(color, isKing, row - 2, col - 2, curboard, true, jumpOver, path);
-						// 這個可能不需要
-						path.remove(path.size() - 1);
-						
-						if(tmpLeft == null && tmpRight == null) {
-							path.add(nnRow + "," + nnCol);
-							Board newBoard = new Board();
-							setUpNewBoard(newBoard, curboard.map, path.get(0), path.get(path.size() - 1), nnRow, nnCol, jumpOver, path);
-							result.add(newBoard);
-							return result;
-							
-						}
-						else {
-							if(tmpLeft != null) {
-								result.addAll(tmpLeft);
-							}
-							if(tmpRight != null) {
-								result.addAll(tmpRight);
-							}
-							return result;
-						}
-					}
+				else if(color.equals("WHITE") && isKing == false) {
+					tmpLeft = goJump(color, -1, -1, isKing, nnRow, nnCol, curboard, jumpOver, path);
+					tmpRight = goJump(color,-1, 1, isKing, nnRow, nnCol, curboard, jumpOver, path);
 				}
-				// simple step out, the nextStep is valid and empty position
-				else if(curboard.map.containsKey(nextStep) == false && continuousJump == false ) {
-					// change map
-					path.add(nextStep);
+				
+				// 這個可能不需要
+				path.remove(path.size() - 1);
+				
+				if(tmpLeft.isEmpty() && tmpRight.isEmpty()) {
+					path.add(nnRow + "," + nnCol);
 					Board newBoard = new Board();
-					setUpNewBoard(newBoard, curboard.map, curStep, nextStep, nextStepRow, nextStepCol, null, path);
+					setUpNewBoard(newBoard, curboard.map, path.get(0), path.get(path.size() - 1), nnRow, nnCol, jumpOver, path);
 					result.add(newBoard);
 					return result;
+					
 				}
 				else {
-					return null;
+					result.addAll(tmpLeft);
+					result.addAll(tmpRight);
+					return result;
 				}
 			}
-			else {
-				return null;
+		}		
+		return result;
+	}
+	
+	private static List<Board> goJumpKing(String color, int rowScalar, int colScalar, boolean isKing, int row, int col, Board curboard,  List<String> jumpOver, List<String> path) {
+		List<Board> result = new ArrayList<>();
+		 
+		int nextStepRow = row + rowScalar;
+		int nextStepCol = col + colScalar;
+		String nextStep = nextStepRow + "," + nextStepCol;
+		
+		// first, check whether there is something can eat
+		if( isValidPos(nextStepRow, nextStepCol) && isMeetEnemy(curboard, nextStepRow, nextStepCol, isKing, color) ) {
+			// 若遇到連續敵軍 或 卡牆 都不能走
+			if( isValidPos( row + 2 * rowScalar, col + 2 * colScalar) == false || isMeetEnemy(curboard, row + 2 * rowScalar, col + 2 * colScalar, isKing, color) == true ) {
+				return result;
 			}
-		}
+			// 確定可以吃一顆旗子
+			else {
+				if(jumpOver.contains(nextStep)) {
+					return result;
+				}
+				// 還有一個判斷式要判斷是不是走到底要變身ＫＩＮＧ
+				// 把所有被跳得點存起來,之後board清除掉
+				jumpOver.add(nextStep);
+				
+				int nnRow = row + 2 * rowScalar;
+				int nnCol = col + 2 * colScalar;
+				
+				path.add(nnRow + "," + nnCol);
+				List<Board> tmpUpLeft = new ArrayList<>();
+				List<Board> tmpUpRight = new ArrayList<>();
+				List<Board> tmpDownLeft = new ArrayList<>();
+				List<Board> tmpDownRight = new ArrayList<>();
+				
+				
+				tmpDownLeft = goJumpKing(color, 1, -1, isKing, nnRow, nnCol, curboard, jumpOver, path);
+				tmpDownRight = goJumpKing(color, 1, 1, isKing, nnRow, nnCol, curboard, jumpOver, path);
+				tmpUpLeft = goJumpKing(color, -1, -1, isKing, nnRow, nnCol, curboard, jumpOver, path);
+				tmpUpRight = goJumpKing(color,-1, 1, isKing, nnRow, nnCol, curboard, jumpOver, path);
+				
+				
+				// 這個可能不需要
+				path.remove(path.size() - 1);
+				
+				if(tmpDownLeft.isEmpty() && tmpDownRight.isEmpty() && tmpUpLeft.isEmpty() && tmpUpRight.isEmpty() ) {
+					path.add(nnRow + "," + nnCol);
+					Board newBoard = new Board();
+					setUpNewBoard(newBoard, curboard.map, path.get(0), path.get(path.size() - 1), nnRow, nnCol, jumpOver, path);
+					result.add(newBoard);
+					return result;
+					
+				}
+				else {
+					result.addAll(tmpDownLeft);
+					result.addAll(tmpDownRight);
+					result.addAll(tmpUpLeft);
+					result.addAll(tmpUpRight);
+					return result;
+				}
+			}
+		}		
+		return result;
 	}
 	
 	
-	
-	
-	
-	/////
-	
-	private static List<Board> goRight(String color, boolean isKing, int row, int col, Board curboard, boolean continuousJump, List<String> jumpOver, List<String> path) {
+	// 黑色左是+1 -1 黑色又是 +1 +1 白色左是 -1 -1 白色右是 -1 +1
+	private static List<Board> go(String color, int rowScalar, int colScalar, boolean isKing, int row, int col, Board curboard, List<String> jumpOver, List<String> path) {
 		List<Board> result = new ArrayList<>();
-//		int row = curNode.row;
-//		int col = curNode.col;
 		String curStep = row + "," + col;
-		if(color.equals("BLACK")) {
-			int nextStepRow = row + 1;
-			int nextStepCol = col + 1;
-			String nextStep = nextStepRow + "," + nextStepCol;
-			
-			// first, check whether there is something can eat
-			if( isValidPos(row + 1, col + 1) ) {
-				if(isMeetEnemy(curboard, row + 1, col + 1, isKing, color) ) {
-					// 若遇到連續敵軍 或 卡牆 都不能走
-					if( isValidPos( row + 2, col + 2) == false || isMeetEnemy(curboard, row + 2, col + 2, isKing, color) == true ) {
-						return null;
-					}
-					// 確定可以吃一顆旗子
-					else {
-						// 把所有被跳得點存起來,之後board清除掉
-						jumpOver.add(nextStep);
-						
-						int nnRow = row + 2;
-						int nnCol = col + 2;
-						
-						path.add(nnRow + "," + nnCol);
-						List<Board> tmpLeft = goLeft(color, isKing, row + 2, col + 2, curboard, true, jumpOver, path);
-						
-						List<Board> tmpRight = goRight(color, isKing, row + 2, col + 2, curboard, true, jumpOver, path);
-						// 這個可能不需要
-						path.remove(path.size() - 1);
-						
-						if(tmpLeft == null && tmpRight == null) {
-							path.add(nnRow + "," + nnCol);
-							Board newBoard = new Board();
-							setUpNewBoard(newBoard, curboard.map, path.get(0), path.get(path.size() - 1), nnRow, nnCol, jumpOver, path);
-							result.add(newBoard);
-							return result;
-							
-						}
-						else {
-							if(tmpLeft != null) {
-								result.addAll(tmpLeft);
-							}
-							if(tmpRight != null) {
-								result.addAll(tmpRight);
-							}
-							
-							
-							return result;
-						}
-					}
-				}
-				// simple step out, the nextStep is valid and empty position
-				else if(curboard.map.containsKey(nextStep) == false && continuousJump == false ) {
-					// change map
-					path.add(nextStep);
-					Board newBoard = new Board();
-					setUpNewBoard(newBoard, curboard.map, curStep, nextStep, nextStepRow, nextStepCol, null, path);
-					result.add(newBoard);
-					return result;
-				}
-				else {
-					return null;
-				}
-			}
-			else {
-				return null;
-			}
+		int nextRow = row + rowScalar;
+		int nextCol = col + colScalar;
+		String nextStep = nextRow + "," + nextCol;
+		if( isValidPos(nextRow, nextCol) && curboard.map.containsKey(nextStep) == false  ) {
+			// change map
+			path.add(nextStep);
+			Board newBoard = new Board();
+			setUpNewBoard(newBoard, curboard.map, curStep, nextStep, nextRow, nextCol, null, path);
+			result.add(newBoard);
+			return result;
 		}
-		// color = WHITE
-		else {
-			int nextStepRow = row - 1;
-			int nextStepCol = col + 1;
-			String nextStep = nextStepRow + "," + nextStepCol;
-			
-			// first, check whether there is something can eat
-			if( isValidPos(row - 1, col + 1) ) {
-				if(isMeetEnemy(curboard, row - 1, col + 1, isKing, color) ) {
-					// 若遇到連續敵軍 或 卡牆 都不能走
-					if( isValidPos( row - 2, col + 2) || isMeetEnemy(curboard, row - 2, col + 2, isKing, color) ) {
-						return null;
-					}
-					// 確定可以吃一顆旗子
-					else {
-						// 把所有被跳得點存起來,之後board清除掉
-						jumpOver.add(nextStep);
-						
-						int nnRow = row - 2;
-						int nnCol = col + 2;
-						
-						path.add(nnRow + "," + nnCol);
-						List<Board> tmpLeft = goLeft(color, isKing, row - 2, col + 2, curboard, true, jumpOver, path);
-						
-						List<Board> tmpRight = goRight(color, isKing, row - 2, col + 2, curboard, true, jumpOver, path);
-						// 這個可能不需要
-						path.remove(path.size() - 1);
-						
-						if(tmpLeft == null && tmpRight == null) {
-							path.add(nnRow + "," + nnCol);
-							Board newBoard = new Board();
-							setUpNewBoard(newBoard, curboard.map, path.get(0), path.get(path.size() - 1), nnRow, nnCol, jumpOver, path);
-							result.add(newBoard);
-							return result;
-							
-						}
-						else {
-							result.addAll(tmpLeft);
-							result.addAll(tmpRight);
-							return result;
-						}
-					}
-				}
-				// simple step out, the nextStep is valid and empty position
-				else if(curboard.map.containsKey(nextStep) == false && continuousJump == false ) {
-					// change map
-					path.add(nextStep);
-					Board newBoard = new Board();
-					setUpNewBoard(newBoard, curboard.map, curStep, nextStep, nextStepRow, nextStepCol, null, path);
-					result.add(newBoard);
-					return result;
-				}
-				else {
-					return null;
-				}
-			}
-			else {
-				return null;
-			}
-		}
+		return result;
+	}	
+		
+	/**
+	 * refator
+	 * */
+	private static List<Board> goLeft(String color, boolean isKing, int row, int col, Board curboard, boolean continuousJump, List<String> jumpOver, List<String> path) {
+//		List<Board> result = new ArrayList<>();
+// 
+//		String curStep = row + "," + col;
+//		if(color.equals("BLACK")) {
+//			int nextStepRow = row + 1;
+//			int nextStepCol = col - 1;
+//			String nextStep = nextStepRow + "," + nextStepCol;
+//			
+//			// first, check whether there is something can eat
+//			if( isValidPos(row + 1, col - 1) ) {
+//				if(isMeetEnemy(curboard, row + 1, col - 1, isKing, color) ) {
+//					// 若遇到連續敵軍 或 卡牆 都不能走
+//					if( isValidPos( row + 2, col - 2) == false|| isMeetEnemy(curboard, row + 2, col - 2, isKing, color) == true ) {
+//						return null;
+//					}
+//					// 確定可以吃一顆旗子
+//					else {
+//						
+//						// 還有一個判斷式要判斷是不是走到底要變身ＫＩＮＧ
+//						// 把所有被跳得點存起來,之後board清除掉
+//						jumpOver.add(nextStep);
+//						
+//						int nnRow = row + 2;
+//						int nnCol = col - 2;
+//						
+//						path.add(nnRow + "," + nnCol);
+//						List<Board> tmpLeft = goLeft(color, isKing, row + 2, col - 2, curboard, true, jumpOver, path);
+//						
+//						List<Board> tmpRight = goRight(color, isKing, row + 2, col - 2, curboard, true, jumpOver, path);
+//						// 這個可能不需要
+//						path.remove(path.size() - 1);
+//						
+//						if(tmpLeft == null && tmpRight == null) {
+//							path.add(nnRow + "," + nnCol);
+//							Board newBoard = new Board();
+//							setUpNewBoard(newBoard, curboard.map, path.get(0), path.get(path.size() - 1), nnRow, nnCol, jumpOver, path);
+//							result.add(newBoard);
+//							return result;
+//							
+//						}
+//						else {
+//							result.addAll(tmpLeft);
+//							result.addAll(tmpRight);
+//							return result;
+//						}
+//					}
+//				}
+//				// simple step out, the nextStep is valid and empty position
+//				else if(curboard.map.containsKey(nextStep) == false && continuousJump == false ) {
+//					// change map
+//					path.add(nextStep);
+//					Board newBoard = new Board();
+//					setUpNewBoard(newBoard, curboard.map, curStep, nextStep, nextStepRow, nextStepCol, null, path);
+//					result.add(newBoard);
+//					return result;
+//				}
+//				else {
+//					return null;
+//				}
+//			}
+//			else {
+//				return null;
+//			}
+//		}
+//		// color = WHITE
+//		else {
+//			int nextStepRow = row - 1;
+//			int nextStepCol = col - 1;
+//			String nextStep = nextStepRow + "," + nextStepCol;
+//			
+//			// first, check whether there is something can eat
+//			if( isValidPos(row - 1, col - 1) ) {
+//				if(isMeetEnemy(curboard, row - 1, col - 1, isKing, color) ) {
+//					// 若遇到連續敵軍 或 卡牆 都不能走
+//					if( isValidPos( row - 2, col - 2) || isMeetEnemy(curboard, row - 2, col - 2, isKing, color) ) {
+//						return null;
+//					}
+//					// 確定可以吃一顆旗子
+//					else {
+//						// 把所有被跳得點存起來,之後board清除掉
+//						jumpOver.add(nextStep);
+//						
+//						int nnRow = row - 2;
+//						int nnCol = col - 2;
+//						
+//						path.add(nnRow + "," + nnCol);
+//						List<Board> tmpLeft = goLeft(color, isKing, row - 2, col - 2, curboard, true, jumpOver, path);
+//						
+//						List<Board> tmpRight = goRight(color, isKing, row - 2, col - 2, curboard, true, jumpOver, path);
+//						// 這個可能不需要
+//						path.remove(path.size() - 1);
+//						
+//						if(tmpLeft == null && tmpRight == null) {
+//							path.add(nnRow + "," + nnCol);
+//							Board newBoard = new Board();
+//							setUpNewBoard(newBoard, curboard.map, path.get(0), path.get(path.size() - 1), nnRow, nnCol, jumpOver, path);
+//							result.add(newBoard);
+//							return result;
+//							
+//						}
+//						else {
+//							if(tmpLeft != null) {
+//								result.addAll(tmpLeft);
+//							}
+//							if(tmpRight != null) {
+//								result.addAll(tmpRight);
+//							}
+//							return result;
+//						}
+//					}
+//				}
+//				// simple step out, the nextStep is valid and empty position
+//				else if(curboard.map.containsKey(nextStep) == false && continuousJump == false ) {
+//					// change map
+//					path.add(nextStep);
+//					Board newBoard = new Board();
+//					setUpNewBoard(newBoard, curboard.map, curStep, nextStep, nextStepRow, nextStepCol, null, path);
+//					result.add(newBoard);
+//					return result;
+//				}
+//				else {
+//					return null;
+//				}
+//			}
+//			else {
+//				return null;
+//			}
+//		}
+		return null;
+	}
+	
+	
+	/**
+	 * refator
+	 * */
+	private static List<Board> goRight(String color, boolean isKing, int row, int col, Board curboard, boolean continuousJump, List<String> jumpOver, List<String> path) {
+//		List<Board> result = new ArrayList<>();
+////		int row = curNode.row;
+////		int col = curNode.col;
+//		String curStep = row + "," + col;
+//		if(color.equals("BLACK")) {
+//			int nextStepRow = row + 1;
+//			int nextStepCol = col + 1;
+//			String nextStep = nextStepRow + "," + nextStepCol;
+//			
+//			// first, check whether there is something can eat
+//			if( isValidPos(row + 1, col + 1) ) {
+//				if(isMeetEnemy(curboard, row + 1, col + 1, isKing, color) ) {
+//					// 若遇到連續敵軍 或 卡牆 都不能走
+//					if( isValidPos( row + 2, col + 2) == false || isMeetEnemy(curboard, row + 2, col + 2, isKing, color) == true ) {
+//						return null;
+//					}
+//					// 確定可以吃一顆旗子
+//					else {
+//						// 把所有被跳得點存起來,之後board清除掉
+//						jumpOver.add(nextStep);
+//						
+//						int nnRow = row + 2;
+//						int nnCol = col + 2;
+//						
+//						path.add(nnRow + "," + nnCol);
+//						List<Board> tmpLeft = goLeft(color, isKing, row + 2, col + 2, curboard, true, jumpOver, path);
+//						
+//						List<Board> tmpRight = goRight(color, isKing, row + 2, col + 2, curboard, true, jumpOver, path);
+//						// 這個可能不需要
+//						path.remove(path.size() - 1);
+//						
+//						if(tmpLeft == null && tmpRight == null) {
+//							path.add(nnRow + "," + nnCol);
+//							Board newBoard = new Board();
+//							setUpNewBoard(newBoard, curboard.map, path.get(0), path.get(path.size() - 1), nnRow, nnCol, jumpOver, path);
+//							result.add(newBoard);
+//							return result;
+//							
+//						}
+//						else {
+//							if(tmpLeft != null) {
+//								result.addAll(tmpLeft);
+//							}
+//							if(tmpRight != null) {
+//								result.addAll(tmpRight);
+//							}
+//							
+//							
+//							return result;
+//						}
+//					}
+//				}
+//				// simple step out, the nextStep is valid and empty position
+//				else if(curboard.map.containsKey(nextStep) == false && continuousJump == false ) {
+//					// change map
+//					path.add(nextStep);
+//					Board newBoard = new Board();
+//					setUpNewBoard(newBoard, curboard.map, curStep, nextStep, nextStepRow, nextStepCol, null, path);
+//					result.add(newBoard);
+//					return result;
+//				}
+//				else {
+//					return null;
+//				}
+//			}
+//			else {
+//				return null;
+//			}
+//		}
+//		// color = WHITE
+//		else {
+//			int nextStepRow = row - 1;
+//			int nextStepCol = col + 1;
+//			String nextStep = nextStepRow + "," + nextStepCol;
+//			
+//			// first, check whether there is something can eat
+//			if( isValidPos(row - 1, col + 1) ) {
+//				if(isMeetEnemy(curboard, row - 1, col + 1, isKing, color) ) {
+//					// 若遇到連續敵軍 或 卡牆 都不能走
+//					if( isValidPos( row - 2, col + 2) || isMeetEnemy(curboard, row - 2, col + 2, isKing, color) ) {
+//						return null;
+//					}
+//					// 確定可以吃一顆旗子
+//					else {
+//						// 把所有被跳得點存起來,之後board清除掉
+//						jumpOver.add(nextStep);
+//						
+//						int nnRow = row - 2;
+//						int nnCol = col + 2;
+//						
+//						path.add(nnRow + "," + nnCol);
+//						List<Board> tmpLeft = goLeft(color, isKing, row - 2, col + 2, curboard, true, jumpOver, path);
+//						
+//						List<Board> tmpRight = goRight(color, isKing, row - 2, col + 2, curboard, true, jumpOver, path);
+//						// 這個可能不需要
+//						path.remove(path.size() - 1);
+//						
+//						if(tmpLeft == null && tmpRight == null) {
+//							path.add(nnRow + "," + nnCol);
+//							Board newBoard = new Board();
+//							setUpNewBoard(newBoard, curboard.map, path.get(0), path.get(path.size() - 1), nnRow, nnCol, jumpOver, path);
+//							result.add(newBoard);
+//							return result;
+//							
+//						}
+//						else {
+//							result.addAll(tmpLeft);
+//							result.addAll(tmpRight);
+//							return result;
+//						}
+//					}
+//				}
+//				// simple step out, the nextStep is valid and empty position
+//				else if(curboard.map.containsKey(nextStep) == false && continuousJump == false ) {
+//					// change map
+//					path.add(nextStep);
+//					Board newBoard = new Board();
+//					setUpNewBoard(newBoard, curboard.map, curStep, nextStep, nextStepRow, nextStepCol, null, path);
+//					result.add(newBoard);
+//					return result;
+//				}
+//				else {
+//					return null;
+//				}
+//			}
+//			else {
+//				return null;
+//			}
+//		}
+		return null;
 	}
 	
 	
@@ -434,6 +650,11 @@ public class minmax {
 		movingNode.col = toPosCol;
 		movingNode.row = toPosRow;
 		
+		// if the node reach the king row then change to king
+		if(movingNode.isKing == false) {
+			isValidKingThenChange(color, movingNode);
+		}
+		
 		newBoard.belongNode = fromPos;
 		newBoard.endNode = toPos;
 		
@@ -450,9 +671,11 @@ public class minmax {
 		else if(color.equals("WHITE") && toPosRow == 0) {
 			movingNode.setIsKing(true);
 		}
-		newBoard.map.put(toPos, movingNode);
 		
 		newBoard.map.remove(fromPos);
+		newBoard.map.put(toPos, movingNode);
+		
+		
 		// removeOpenent 有可能是null
 		if(removeOpenent != null) {
 			for(String oppnent : removeOpenent) {
@@ -470,6 +693,14 @@ public class minmax {
 		// do we need to create a new map that store the node which removed by us?
 	}
 	
+	private static void isValidKingThenChange(String color, Node node) {
+		if(color.equals("BLACK") && node.row == 7) {
+			node.isKing = true;
+		}
+		else if(color.equals("WHITE") && node.row == 0) {
+			node.isKing = true;
+		}
+	}
 	
 	
 	/**
@@ -658,6 +889,37 @@ public class minmax {
 		
 		public void setMap(Map<String, Node>  m) {
 			map = m;
+		}
+		
+		public void print() {
+			for(int i = 0; i < 8; i++) {
+				for(int j = 0; j < 8; j++) {
+					String pos = i + "," + j;
+					if(map.containsKey(pos)) {
+						Node node = map.get(pos);
+						if(node.color.equals("BLACK")) {
+							if(node.isKing == true) {
+								System.out.print("B");
+							}
+							else {
+								System.out.print("b");
+							}
+						}
+						else {
+							if(node.isKing == true) {
+								System.out.print("W");
+							}
+							else {
+								System.out.print("w");
+							}
+						}
+					}
+					else {
+						System.out.print(".");
+					}
+				}
+				System.out.println();
+			}
 		}
 		
 		

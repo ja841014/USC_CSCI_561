@@ -8,21 +8,42 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+
 // black open the game, black always on the top
 // 8*8 12棋子
 // normal piece can only move forward (upper left/ upper right)
 // king piece can move forward and backward (upper left/ upper right/ down left/ down right)
 //////
-// [not finished] 
-// 怎麼判斷勝負
-// 改座標體系
-// eval function
+
 public class minmax {
 	
 	public static void main(String[] args) throws IOException {
 		File outFile = new File("output.txt");
 		FileWriter fileWriter = new FileWriter(outFile);
 		File file = new File("/Users/laicunhao/eclipse-workspace/CS561HW2/src/input.txt");
+		
+//		File cali = new File("calibrate.txt");
+//		Scanner caliScanner = new Scanner(cali);
+		
+		int playturn = 1;
+		File f = new File("playdata.txt");
+		if (f.exists()) {
+//			System.out.println("Exists");
+			Scanner playScanner = new Scanner(f);
+			playturn = Integer.parseInt(playScanner.next());
+			playturn++;
+			FileWriter playerFile = new FileWriter(f);
+        	playerFile.write(playturn+"");
+        	playerFile.close();
+		}
+        else {
+//        	System.out.println("Does not Exists");
+        	FileWriter playerFile = new FileWriter(f);
+        	playerFile.write(playturn+"");
+        	playerFile.close();
+        }
+            
+		
 		Scanner scanner = new Scanner(file);
 		// SINGLE OR GAME
 		String mode = scanner.next();
@@ -33,56 +54,123 @@ public class minmax {
 		Board board = new Board();
 		buildMap(board, scanner);
 		
-		// Board newBoard = new Board();
-		// newBoard.setMap(assignNewBoard(newBoard, board.map));
 		
 		
 		// Get all our side piece
-		List<Node> ls;
+//		List<Node> ls;
 		String opponentColor = "";
-		boolean myTurn;
+//		boolean myTurn;
 		
-		// 這裡很怪 我是不是應該都要先走 => myturn = true
+		
 		if(myColor.equals("BLACK")) {
 			opponentColor = "WHITE";
 		}
 		else {
 			opponentColor = "BLACK";
 		}
+		/*
+		if(mode.equals("SINGLE")) {
+			Board resultBoard = minimax(11, true, Double.NEGATIVE_INFINITY, Double.MAX_VALUE, myColor, opponentColor, board);
+			
+			System.out.println(resultBoard.eval);
+			resultBoard.print();
+			
+			List<String> path =  resultBoard.map.get(resultBoard.endNode).paths;
+			String movingType = moveType(path);
+			writeOutFile(fileWriter, path, movingType);
+		}
+		else {
+			
+			if(playturn <= 5) {
+				Board resultBoard = minimax(5, true, Integer.MIN_VALUE, Integer.MAX_VALUE, myColor, opponentColor, board);
+				List<String> path =  resultBoard.map.get(resultBoard.endNode).paths;
+				String movingType = moveType(path);
+				writeOutFile(fileWriter, path, movingType);
+			}
+			else {
+
+				if(remainTime < 0.01) {
+//					System.out.println("0.01");
+					Board resultBoard = minimax(1, true, Integer.MIN_VALUE, Integer.MAX_VALUE, myColor, opponentColor, board);
+					List<String> path =  resultBoard.map.get(resultBoard.endNode).paths;
+					String movingType = moveType(path);
+					writeOutFile(fileWriter, path, movingType);
+				}
+				else if(remainTime < 2) {
+//					System.out.println("2");
+					Board resultBoard = minimax(3, true, Integer.MIN_VALUE, Integer.MAX_VALUE, myColor, opponentColor, board);
+					List<String> path =  resultBoard.map.get(resultBoard.endNode).paths;
+					String movingType = moveType(path);
+					writeOutFile(fileWriter, path, movingType);
+				}
+				else if(remainTime < 5) {
+//					System.out.println("5");
+					Board resultBoard = minimax(5, true, Integer.MIN_VALUE, Integer.MAX_VALUE, myColor, opponentColor, board);
+					List<String> path =  resultBoard.map.get(resultBoard.endNode).paths;
+					String movingType = moveType(path);
+					writeOutFile(fileWriter, path, movingType);
+				}
+				else if(remainTime < 20) {
+//					System.out.println("20");
+					Board resultBoard = minimax(7, true, Integer.MIN_VALUE, Integer.MAX_VALUE, myColor, opponentColor, board);
+					List<String> path =  resultBoard.map.get(resultBoard.endNode).paths;
+					String movingType = moveType(path);
+					writeOutFile(fileWriter, path, movingType);
+				}
+				else if(remainTime < 100){
+//					System.out.println("100");
+					Board resultBoard = minimax(9, true, Integer.MIN_VALUE, Integer.MAX_VALUE, myColor, opponentColor, board);
+					List<String> path =  resultBoard.map.get(resultBoard.endNode).paths;
+					String movingType = moveType(path);
+					writeOutFile(fileWriter, path, movingType);
+				}
+				else {
+//					System.out.println(">100");
+					Board resultBoard = minimax(11, true, Integer.MIN_VALUE, Integer.MAX_VALUE, myColor, opponentColor, board);
+					List<String> path =  resultBoard.map.get(resultBoard.endNode).paths;
+					String movingType = moveType(path);
+					writeOutFile(fileWriter, path, movingType);
+				}
+			}
+						
+		}
+	
+*/
 		
-//		long startTime = System.currentTimeMillis();
-		Board resultBoard = minimax(9, true, Integer.MIN_VALUE, Integer.MAX_VALUE, myColor, opponentColor, board);
-//		long endTime = System.currentTimeMillis(); //获取结束时间
+//		for(int i = 13; i >= 1; i = i - 2) {
+//		float time = Float.parseFloat(caliScanner.next());
+//		if(time <= 15 && time < remainTime) {
+//			depth = i;
+//			break;
+//		}
+//	}
 		
 		
+//		/// NEED DELETE ////
 		Board testwhite = board;
 		Board testblack = board;
 		int turn = 1;
-//		///////TEST/////
-//		while(testwhite.endGame() == false && testblack.endGame() == false ) {
-//			System.out.println("turn: " + turn);
-//			//黑先
-//			testwhite = minimax(9, true, Integer.MIN_VALUE, Integer.MAX_VALUE, "BLACK", "WHITE", testblack);
-//			testwhite.print();
-//			System.out.println();
-//			testblack = minimax(3, true, Integer.MIN_VALUE, Integer.MAX_VALUE, "WHITE", "BLACK", testwhite);
-//			testblack.print();
-//			System.out.println();
-//			turn++;
-//		}
 		///////TEST/////
-		
-//		System.out.println("TIME：" + (endTime - startTime)+ "msec"); 
-//		
-		List<String> path =  resultBoard.map.get(resultBoard.endNode).paths;
-		String movingType = moveType(path);
-		writeOutFile(fileWriter, path, movingType);
-//		
-//		for(String s:  path) {
-//			System.out.println(s);
-//		}
-		
-		
+		while(testwhite.endGame() == false || testblack.endGame() == false ) {
+			System.out.println("turn: " + turn);
+			//黑先
+			testwhite = minimax2(11, true, Double.NEGATIVE_INFINITY, Double.MAX_VALUE,  "BLACK", "WHITE",testblack);
+			System.out.println(testwhite.eval);
+			testwhite.print();
+			
+			testwhite.eval = 0;
+			
+			System.out.println();
+			testblack = minimax(7, true, Double.NEGATIVE_INFINITY, Double.MAX_VALUE, "WHITE", "BLACK",testwhite);
+			System.out.println(testblack.eval);
+			
+			testblack.print();
+			testblack.eval = 0;
+			System.out.println();
+			turn++;
+		}
+//		///////TEST/////		
+//		/// NEED DELETE ////
 		
 	}
 	
@@ -178,39 +266,25 @@ public class minmax {
 		}
 	}
 	
-	private static Board minimax(int depth, boolean myTurn, int alpha, int beta, String myColor, String opponentColor, Board board) {
-		if(depth == 0) {
-//			board.statsFunc();
-			
-			board.eval(myColor);		
-//			System.out.println("EVAL ORG:"+ board.eval);
-//			System.out.println("curBoard.blackLs.size()" + board.blackLs.size());
-//			System.out.println("curBoard.whiteLs.size()" + board.whiteLs.size());
-//			System.out.println("board.blackKing:"+ board.blackKing);
-//			System.out.println("board.whiteKing:"+ board.whiteKing);
-//			board.print();
-//			System.out.println();
+	
+	private static Board minimax(int depth, boolean myTurn, double alpha, double beta, String myColor, String opponentColor, Board board) {
+		if(depth == 0) {			
+			board.eval2(myColor);
+
 			return board;
 		}
 		
 		if(myTurn) {
-			int maxEval = Integer.MIN_VALUE;
-			// 這裡需要改 bestMove == board 嗎？？？？   要 必續傳
+			double maxEval = Double.NEGATIVE_INFINITY;
 			Board bestMove= board;
 
 			List<Node> ls = determineColor(board, myTurn, myColor, opponentColor);
-			
 			List<Board> allMoves = getAllMoves(board, ls);
+			
 			// null check => check if "board" is the end of the Game
 			if(allMoves.isEmpty()) {
-				bestMove.eval(myColor);
-//				System.out.println("EVAL:"+ board.eval);
-//				System.out.println("curBoard.blackLs.size()" + board.blackLs.size());
-//				System.out.println("curBoard.whiteLs.size()" + board.whiteLs.size());
-//				System.out.println("board.blackKing:"+ board.blackKing);
-//				System.out.println("board.whiteKing:"+ board.whiteKing);
-//				board.print();
-//				System.out.println();
+				bestMove.eval2(myColor);
+
 				return bestMove;
 			}
 			
@@ -218,40 +292,48 @@ public class minmax {
 				Board tmp = minimax(depth - 1, false, alpha, beta, myColor, opponentColor, curBoard);
 				
 				maxEval = Math.max(maxEval, tmp.eval);
-				/////////
-				// a b //
-				if(maxEval >= beta) {
-					// NOT SURE return tmp or curBoard
-					return tmp;
-				}
-				else {
-					alpha = Math.max(alpha, maxEval);
-				}
-				////////
+				
+				//////ab//////
+				alpha = Math.max(alpha, maxEval);
 				
 				if(maxEval == tmp.eval) {
+					curBoard.eval = tmp.eval;
 					bestMove = curBoard;
 				}
+				if(beta <= alpha) {
+					break;
+				}
+				//////////////
+				
+				// a b //
+//				if(maxEval >= beta) {
+//					// NOT SURE return tmp or curBoard
+//					curBoard.eval = tmp.eval;
+//					return curBoard;
+//				}
+//				alpha = Math.max(alpha, maxEval);
+//								
+//				if(maxEval == tmp.eval) {
+//					curBoard.eval = tmp.eval;
+//					bestMove = curBoard;
+//				}
+				////////////
+				
+				
+				
 				
 			}
 			return bestMove;
 		}
 		else {
-			int minEval = Integer.MAX_VALUE;
+			double minEval = Double.MAX_VALUE;
 			Board bestMove= board;
 			List<Node> ls = determineColor(board, myTurn, myColor, opponentColor);
 			
 			List<Board> allMoves = getAllMoves(board, ls);
 			// null check => check if "board" is the end of the Game
 			if(allMoves.isEmpty()) {
-				bestMove.eval(myColor);
-//				System.out.println("EVAL:"+ board.eval);
-//				System.out.println("curBoard.blackLs.size()" + board.blackLs.size());
-//				System.out.println("curBoard.whiteLs.size()" + board.whiteLs.size());
-//				System.out.println("board.blackKing:"+ board.blackKing);
-//				System.out.println("board.whiteKing:"+ board.whiteKing);
-//				board.print();
-//				System.out.println();
+				bestMove.eval2(myColor);
 				return bestMove;
 			}
 			
@@ -260,24 +342,216 @@ public class minmax {
 				
 				
 				minEval = Math.min(minEval, tmp.eval);
-				// a b //
-				if(minEval <= alpha) {
-					// NOT SURE return tmp or curBoard
-					return tmp;
-				}
-				else {
-					beta = Math.min(beta, minEval);
-				}
-				///////
 				
+				//////////
+				beta = Math.min(beta, minEval);
 				
 				if(minEval == tmp.eval) {
+					curBoard.eval = tmp.eval;
 					bestMove = curBoard;
 				}
+				if(alpha <= beta) {
+					break;
+				}
+				
+				//////////
+				
+				// a b //
+//				if(minEval <= alpha) {
+//					// NOT SURE return tmp or curBoard
+//					curBoard.eval = tmp.eval;
+//					return curBoard;
+//				}
+//				beta = Math.min(beta, minEval);
+//						
+//				
+//				if(minEval == tmp.eval) {
+//					curBoard.eval = tmp.eval;
+//					bestMove = curBoard;
+//				}
+				////////
+				
+				
+				
 			}
 			return bestMove;
 		}
 	}
+	
+	
+	// TESTING ///
+	private static Board minimax2(int depth, boolean myTurn, double alpha, double beta, String myColor, String opponentColor, Board board) {
+		if(depth == 0) {			
+			board.eval(myColor);
+			return board;
+		}
+		
+		if(myTurn) {
+			double maxEval = Double.NEGATIVE_INFINITY;
+			Board bestMove= board;
+
+			List<Node> ls = determineColor(board, myTurn, myColor, opponentColor);
+			List<Board> allMoves = getAllMoves(board, ls);
+			
+			// null check => check if "board" is the end of the Game
+			if(allMoves.isEmpty()) {
+				bestMove.eval(myColor);
+
+				return bestMove;
+			}
+			
+			for(Board curBoard: allMoves) {
+				Board tmp = minimax2(depth - 1, false, alpha, beta, myColor, opponentColor, curBoard);
+				
+				maxEval = Math.max(maxEval, tmp.eval);
+				
+				//////ab//////
+				alpha = Math.max(alpha, maxEval);
+				
+				if(maxEval == tmp.eval) {
+					curBoard.eval = tmp.eval;
+					bestMove = curBoard;
+				}
+				if(beta <= alpha) {
+					break;
+				}
+				//////////////
+				
+				
+			}
+			return bestMove;
+		}
+		else {
+			double minEval = Double.MAX_VALUE;
+			Board bestMove= board;
+			List<Node> ls = determineColor(board, myTurn, myColor, opponentColor);
+			
+			List<Board> allMoves = getAllMoves(board, ls);
+			// null check => check if "board" is the end of the Game
+			if(allMoves.isEmpty()) {
+				bestMove.eval(myColor);
+				return bestMove;
+			}
+			
+			for(Board curBoard: allMoves) {
+				Board tmp = minimax2(depth - 1, true, alpha, beta, myColor, opponentColor, curBoard);
+				
+				
+				minEval = Math.min(minEval, tmp.eval);
+				
+				beta = Math.min(beta, minEval);
+				
+				
+				if(minEval == tmp.eval) {
+					curBoard.eval = tmp.eval;
+					bestMove = curBoard;
+				}
+				if(alpha <= beta) {
+					break;
+				}
+				
+			}
+			return bestMove;
+		}
+	}
+//	////////TESTING//////////
+	
+	
+	
+//	private static Board minimax(int depth, boolean myTurn, int alpha, int beta, String myColor, String opponentColor, Board board) {
+//		if(depth == 0) {			
+//			board.eval(myColor);
+////			System.out.println("org:"+board.eval);
+////			board.print();
+////			System.out.println();
+//			return board;
+//		}
+//		
+//		if(myTurn) {
+//			int maxEval = Integer.MIN_VALUE;
+//			// 這裡需要改 bestMove == board 嗎？？？？   要 必續傳
+//			Board bestMove= board;
+//
+//			List<Node> ls = determineColor(board, myTurn, myColor, opponentColor);
+//			
+//			List<Board> allMoves = getAllMoves(board, ls);
+//			// null check => check if "board" is the end of the Game
+//			if(allMoves.isEmpty()) {
+//				bestMove.eval(myColor);
+//				
+////				System.out.println("AAorg:"+bestMove.eval);
+////				bestMove.print();
+////				System.out.println();
+//				
+//				return bestMove;
+//			}
+//			
+//			for(Board curBoard: allMoves) {
+//				Board tmp = minimax(depth - 1, false, alpha, beta, myColor, opponentColor, curBoard);
+//				
+//				maxEval = Math.max(maxEval, tmp.eval);
+//				/////////
+//				// a b //
+//				if(maxEval >= beta) {
+//					// NOT SURE return tmp or curBoard
+//					 curBoard.eval = tmp.eval;
+//					return curBoard;
+//				}
+//				alpha = Math.max(alpha, maxEval);
+//				
+//				////////
+//				
+//				if(maxEval == tmp.eval) {
+//					 curBoard.eval = tmp.eval;
+//					bestMove = curBoard;
+//				}
+//				
+//			}
+//			return bestMove;
+//		}
+//		else {
+//			int minEval = Integer.MAX_VALUE;
+//			Board bestMove= board;
+//			List<Node> ls = determineColor(board, myTurn, myColor, opponentColor);
+//			
+//			List<Board> allMoves = getAllMoves(board, ls);
+//			// null check => check if "board" is the end of the Game
+//			if(allMoves.isEmpty()) {
+//				bestMove.eval(myColor);
+//				
+////				System.out.println("AAorg:"+bestMove.eval);
+////				bestMove.print();
+////				System.out.println();
+//				
+//				
+//				return bestMove;
+//			}
+//			
+//			for(Board curBoard: allMoves) {
+//				Board tmp = minimax(depth - 1, true, alpha, beta, myColor, opponentColor, curBoard);
+//				
+//				
+//				minEval = Math.min(minEval, tmp.eval);
+//				// a b //
+//				if(minEval <= alpha) {
+//					// NOT SURE return tmp or curBoard
+//					curBoard.eval = tmp.eval;
+//					return curBoard;
+//				}
+//				else {
+//					beta = Math.min(beta, minEval);
+//				}
+//				///////
+//				
+//				
+//				if(minEval == tmp.eval) {
+//					 curBoard.eval = tmp.eval;
+//					bestMove = curBoard;
+//				}
+//			}
+//			return bestMove;
+//		}
+//	}
 	
 	private static List<Node> determineColor(Board board, boolean myTurn, String myColor, String opponentColor) {
 		List<Node> ls;
@@ -779,7 +1053,6 @@ public class minmax {
 				Node node = new Node(i, j);
 				if(curChar == 'b' || curChar == 'B') {
 					if(curChar == 'B') {
-//						board.blackKing++;
 						node.setColor("BLACK");
 						node.setIsKing(true);
 						
@@ -787,7 +1060,6 @@ public class minmax {
 					else {
 						node.setColor("BLACK");
 						node.setIsKing(false);
-//						board.blackNorPiece++;
 					}
 					board.blackLs.add(node);
 					map.put(i + "," + j, node);
@@ -796,12 +1068,10 @@ public class minmax {
 					if(curChar == 'W') {
 						node.setColor("WHITE");
 						node.setIsKing(true);
-//						board.whiteKing++;
 					}
 					else {
 						node.setColor("WHITE");
 						node.setIsKing(false);
-//						board.whiteNorPiece++;
 					}
 					board.whiteLs.add(node);
 					map.put(i + "," + j, node);
@@ -846,7 +1116,9 @@ public class minmax {
 	public static class Board {
 		int blackKing = 0;
 		int whiteKing = 0;
-		int eval = 0;
+		// TESTING
+		double eval = 0;
+		
 		List<Node> blackLs;
 		List<Node> whiteLs;
 		Map<String, Node> map;
@@ -887,33 +1159,306 @@ public class minmax {
 			}
 		}
 		
-		public int eval(String color) {
+		
+		public double eval2(String color) {
+			List<Node> blackKingList = new ArrayList<>();
+			List<Node> whiteKingList = new ArrayList<>();
+			
+			double blackVal = 0;
+			double whiteVal = 0;
+			int blackNor = 0;
+			int whiteNor = 0;
+//			
+//			int blackNorInBackRow = 0;
+//			int whiteNorInBackRow = 0;
+//			
+//			int blackmiddleBox = 0;
+//			int blackmiddle2RowNotMiddleBox = 0;
+//			int whitemiddleBox = 0;
+//			int whitemiddle2RowNotMiddleBox = 0;
+			
+			for(Node blackNode: blackLs) {
+				
+				String leftDown = (blackNode.row + 1) + "," + (blackNode.col - 1);
+				
+				String rightDown = (blackNode.row + 1) + "," + (blackNode.col + 1);
+				
+				String leftUp = (blackNode.row  - 1) + "," + (blackNode.col - 1);
+				
+				String rightUp = (blackNode.row - 1) + "," + (blackNode.col + 1);
+				
+				
+				
+				String ll = (blackNode.row) + "," + (blackNode.col - 2);
+				String rr = (blackNode.row) + "," + (blackNode.col + 2);
+				String dd = (blackNode.row + 2) + "," + (blackNode.col);
+				String uu = (blackNode.row - 2) + "," + (blackNode.col);
+				
+				
+				if(blackNode.isKing == true) {
+					blackVal = blackVal + 7.75;
+					
+					blackKingList.add(blackNode);
+					blackKing++;
+				}
+				else {
+					blackVal = blackVal + 5.0;
+					blackNor++;
+				}
+				
+				// blackNorInBackRow
+				if(blackNode.row == 0) {
+					blackVal = blackVal + 4;
+				}
+				// in the middle box
+//				else if( (blackNode.row == 3 || blackNode.row == 4) && 
+//						(blackNode.col == 2 || blackNode.col == 3 || blackNode.col == 4 || blackNode.col == 5) ) {
+//					blackVal = blackVal + 0.5;
+//				}
+				// in the middle but nit in middle box
+//				else if(blackNode.row == 3 || blackNode.row == 4) {
+//					blackVal = blackVal + 3.5;
+//				}
+				else if(blackNode.col == 0 || blackNode.col == 7){
+					blackVal = blackVal + 2.5;
+				}
+				
+				
+				// 找危險區域
+				if( (map.get(leftDown) != null && map.get(leftDown).color == "WHITE" && isValidPos(blackNode.row - 1, blackNode.col + 1) == true ) ||
+					(map.get(rightDown) != null && map.get(rightDown).color == "WHITE" && isValidPos(blackNode.row  - 1, blackNode.col - 1) == true) ||
+					(map.get(leftUp) != null && map.get(leftUp).color == "WHITE" && map.get(leftUp).getIsKing() == true && isValidPos(blackNode.row  + 1, blackNode.col + 1) == true) ||
+					(map.get(rightUp) != null && map.get(rightUp).color == "WHITE" && map.get(rightUp).getIsKing() == true && isValidPos(blackNode.row  + 1, blackNode.col - 1) == true)
+						) {
+					blackVal = blackVal - 10.5;
+				}
+				else {
+					blackVal = blackVal + 3;
+				}
+				
+				
+				if((map.get(ll) != null && map.get(ll).color == "BLACK" && isValidPos(blackNode.row, blackNode.col - 2) == true ) ||
+						(map.get(rr) != null && map.get(rr).color == "BLACK" && isValidPos(blackNode.row, blackNode.col + 2) == true) ||
+						(map.get(uu) != null && map.get(uu).color == "BLACK" && isValidPos(blackNode.row - 2, blackNode.col) == true) ||
+						(map.get(dd) != null && map.get(dd).color == "BLACK" && isValidPos(blackNode.row + 2, blackNode.col) == true)
+							) {
+						blackVal = blackVal - 3;
+					}
+					else {
+						blackVal = blackVal + 3;
+					
+					}
+				
+				
+			}
+			
+			
+			
+			for(Node whiteNode : whiteLs) {
+				
+				String leftDown = (whiteNode.row + 1) + "," + (whiteNode.col - 1);
+				
+				String rightDown = (whiteNode.row + 1) + "," + (whiteNode.col + 1);
+				
+				String leftUp = (whiteNode.row  - 1) + "," + (whiteNode.col - 1);
+				
+				String rightUp = (whiteNode.row - 1) + "," + (whiteNode.col + 1);
+				
+				String ll = (whiteNode.row) + "," + (whiteNode.col - 2);
+				String rr = (whiteNode.row) + "," + (whiteNode.col + 2);
+				String dd = (whiteNode.row + 2) + "," + (whiteNode.col);
+				String uu = (whiteNode.row - 2) + "," + (whiteNode.col);
+
+				
+				
+				if(whiteNode.isKing == true) {
+					whiteVal = whiteVal + 7.75;
+
+					whiteKingList.add(whiteNode);
+					whiteKing++;
+				}
+				else {
+					whiteVal = whiteVal + 5;
+					whiteNor++;
+				}
+				
+				if(whiteNode.row == 7) {
+					whiteVal = whiteVal + 4.0;
+				}
+//				else if( (whiteNode.row == 3 || whiteNode.row == 4) && 
+//						(whiteNode.col == 2 || whiteNode.col == 3 || whiteNode.col == 4 || whiteNode.col == 5) ) {
+//					whiteVal = whiteVal + 0.5;
+//				}
+//				else if(whiteNode.row == 3 || whiteNode.row == 4) {
+//					whiteVal = whiteVal + 3.5;
+//				}
+				else if(whiteNode.col == 0 || whiteNode.col == 7){
+					blackVal = blackVal + 2.5;
+				}
+				
+				// 找危險區域
+				if( (map.get(leftDown) != null && map.get(leftDown).color == "BLACK" && map.get(leftDown).getIsKing() == true && isValidPos(whiteNode.row - 1, whiteNode.col + 1) == true ) ||
+						(map.get(rightDown) != null && map.get(rightDown).color == "BLACK" && map.get(rightDown).getIsKing() == true && isValidPos(whiteNode.row  - 1, whiteNode.col - 1) == true) ||
+						(map.get(leftUp) != null && map.get(leftUp).color == "BLACK" && isValidPos(whiteNode.row  + 1, whiteNode.col + 1) == true) ||
+						(map.get(rightUp) != null && map.get(rightUp).color == "BLACK" && isValidPos(whiteNode.row  + 1, whiteNode.col - 1) == true)
+							) {
+						whiteVal = whiteVal - 6.5;
+					}
+					else {
+						whiteVal = whiteVal + 3;
+					}
+				
+				if((map.get(ll) != null && map.get(ll).color == "WHITE" && isValidPos(whiteNode.row, whiteNode.col - 2) == true ) ||
+					(map.get(rr) != null && map.get(rr).color == "WHITE" && isValidPos(whiteNode.row, whiteNode.col + 2) == true) ||
+					(map.get(uu) != null && map.get(uu).color == "WHITE" && isValidPos(whiteNode.row - 2, whiteNode.col) == true) ||
+					(map.get(dd) != null && map.get(dd).color == "WHITE" && isValidPos(whiteNode.row + 2, whiteNode.col) == true)
+						) {
+					whiteVal = whiteVal - 3;
+				}
+				else {
+					whiteVal = whiteVal + 3;
+				}
+				
+				
+			}
+			
+//			if(blackNor == 0 && whiteNor == 0) {
+//				double endBlackVal = 0;
+//				double endWhiteVal = 0;
+//				for(Node blackKingNode : blackKingList) {
+//					for(Node whiteNode : whiteKingList) {
+//						int x = (blackKingNode.row - whiteNode.row);
+//						int y = (blackKingNode.col - whiteNode.col);
+//						endBlackVal = endBlackVal + Math.sqrt(x*x + y*y);
+//					}
+//				}
+//				
+//				for(Node whiteKingNode : whiteKingList) {
+//					for(Node blackNode : blackKingList) {
+//						int x = (whiteKingNode.row - blackNode.row);
+//						int y = (whiteKingNode.col - blackNode.col);
+//						endWhiteVal = endWhiteVal + Math.sqrt(x*x + y*y);
+//					}
+//				}
+//				
+//				if(color.equals("WHITE")) {
+//					eval = endWhiteVal;
+//					if(whiteKingList.size() >= blackKingList.size() ) {
+//						return eval * (-1);
+//					}
+//					else {
+//						return eval;
+//					}
+//				}
+//				else {
+//					eval = endBlackVal;
+//					if(blackKingList.size() >= whiteKingList.size() ) {
+//						return eval * (-1);
+//					}
+//					else {
+//						return eval;
+//					}
+//				} 
+//			}
+			
+			
+			if(color.equals("WHITE")) {
+				eval =  whiteVal - blackVal;
+			}
+			else {
+				eval = blackVal - whiteVal;
+			}
+			
+			
+			return eval;
+		}
+		
+		
+		public double eval(String color) {
 //			statsFunc();
 //			int blackNor = blackLs.size() - blackKing;
 //			int whiteNor = whiteLs.size() - whiteKing;
+			List<Node> blackKingList = new ArrayList<>();
+			List<Node> whiteKingList = new ArrayList<>();
+			
 			int blackVal = 0;
 			int whiteVal = 0;
+			int blackNor = 0;
+			int whiteNor = 0;
+			
 			
 			for(Node blackNode: blackLs) {
 				if(blackNode.isKing == true) {
 					blackVal = blackVal + 15;
+
+					blackKingList.add(blackNode);
 					blackKing++;
 				}
 				else {
 					blackVal = blackVal + 5 + blackNode.row;
+					blackNor++;
 				}
 			}
 			
 			for(Node whiteNode : whiteLs) {
 				if(whiteNode.isKing == true) {
 					whiteVal = whiteVal + 15;
+
+					whiteKingList.add(whiteNode);
 					whiteKing++;
 				}
 				else {
 					whiteVal = whiteVal + 5 + (7 - whiteNode.row);
+					whiteNor++;
+					
 				}
 			}
 			
+
+			
+			if(blackNor == 0 && whiteNor == 0) {
+				double endBlackVal = 0;
+				double endWhiteVal = 0;
+				for(Node blackKingNode : blackKingList) {
+					for(Node whiteNode : whiteKingList) {
+						int x = (blackKingNode.row - whiteNode.row);
+						int y = (blackKingNode.col - whiteNode.col);
+						endBlackVal = endBlackVal + Math.sqrt(x*x + y*y);
+					}
+				}
+				
+				for(Node whiteKingNode : whiteKingList) {
+					for(Node blackNode : blackKingList) {
+						int x = (whiteKingNode.row - blackNode.row);
+						int y = (whiteKingNode.col - blackNode.col);
+						endWhiteVal = endWhiteVal + Math.sqrt(x*x + y*y);
+					}
+				}
+				
+				if(color.equals("WHITE")) {
+					eval = (int)Math.round(endWhiteVal);
+					if(whiteKingList.size() >= blackKingList.size() ) {
+						return eval * (-1);
+					}
+					else {
+						return eval;
+					}
+				}
+				else {
+					eval = (int)Math.round(endBlackVal);
+					if(blackKingList.size() >= whiteKingList.size() ) {
+						return eval * (-1);
+					}
+					else {
+						return eval;
+					}
+				} 
+			}
+			
+
+			
+//			System.out.println("not change");
+		
 			if(color.equals("WHITE")) {
 				eval = whiteVal - blackVal;
 			}
@@ -924,6 +1469,7 @@ public class minmax {
 			
 			return eval;
 		}
+		
 		
 		public List<Node> getBlackLs() {
 			

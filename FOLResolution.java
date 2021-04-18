@@ -3,9 +3,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 public class FOLResolution {
 	
@@ -26,10 +28,24 @@ public class FOLResolution {
 		// for loop query; query come in  正常來說應該只有一條
 		for(int i = 0; i < query.size(); i++) {
 			Map<String, List<Term>> curQuery = query.get(i);
-			resolution(kb, curQuery);
+			Set<String> seen = new HashSet<>();
+			String recordStr = substituteProcess(new HashMap<>(), curQuery);
+			
+			kb.add(curQuery);
+			boolean findAnswer = resolution(kb, curQuery, seen, recordStr);
+			kb.remove(kb.size() - 1);
+			if(findAnswer == true) {
+				fileWriter.write("TRUE");
+			}
+			else {
+				fileWriter.write("FALSE");
+			}
+			if(i != query.size() - 1) {
+				fileWriter.write("\n");
+			}
+		
 		}
-		
-		
+		fileWriter.close();
 		
 		int x = 0;
 		System.out.println(x);
@@ -95,6 +111,7 @@ public class FOLResolution {
 		}
 		
 	}
+	
 	/*
 	 * adding negation
 	 * return String
@@ -133,14 +150,18 @@ public class FOLResolution {
 	}
 	
 	
-	
-	private static void resolution(List<Map<String, List<Term>>> kb, Map<String, List<Term>> curQuery) {
+ 	
+	private static boolean resolution(List<Map<String, List<Term>>> kb, Map<String, List<Term>> curQuery,Set<String> seen, String curQueryStr) {
 		
-		int newLiteral = 0;
-		Map<String, List<Term>> potentialQuery = new HashMap<>();		
-			
+		// avoid create a cycle
+		if(seen.contains(curQueryStr)) {
+			return false;
+		}
+		seen.add(curQueryStr);
+		
 		// for loop kb's sentence to find same predicates
 		for(int j = 0; j < kb.size(); j++) {
+			Map<String, List<Term>> potentialQuery = new HashMap<>();	
 			// one sentence from kb
 			Map<String, List<Term>> curKbSentence =  kb.get(j);
 			makeCopyOfKbSentnece(potentialQuery, kb.get(j));
@@ -152,6 +173,7 @@ public class FOLResolution {
 				String curQueryPredicate = queryEntry.getKey();
 				List<Term> curQueryTerms = queryEntry.getValue();
 				// get this query's predicate and add negative
+				// maybe here can do soome optomized
 				String negatedQuery = addNegative(curQueryPredicate);
 				
 				// if predicates same do sth
@@ -161,8 +183,13 @@ public class FOLResolution {
 					}
 					// check argument matched
 					if(isArgsMatch(substitution, curQueryTerms, curKbSentence.get(negatedQuery))) {
+						
 						// if they are same we have to eliminate
 						potentialQuery.remove(negatedQuery);
+						// if the potentialQuery size equal to zeon. means that we find the answer!!
+						if(potentialQuery.size() == 0) {
+							return true;
+						}
 					}
 					else {
 						break;
@@ -178,30 +205,35 @@ public class FOLResolution {
 				
 			}
 			if(check == true) {
+				check = false;
 				// after for loop we have to do substitution!!
-				substituteProcess(substitution,  potentialQuery);
+				String nextQueryStr = substituteProcess(substitution,  potentialQuery);
 				
 				// here might have backtracking pattern
-			
+				
 				// next add new sentence into orgriginalKB
+				kb.add(potentialQuery);
 				// next round
+				boolean findResolution = resolution(kb, potentialQuery, seen, nextQueryStr);
 				//remove new sentence
+				kb.remove(kb.size() - 1);
+				// if we get true then we could terminate
+				if(findResolution == true) {
+					return true;
+				}
+				
+				
 			}
 			else {
+				System.out.println("not Match");
 				continue;
-			}
-			
-			
-			
-			
-			
-			
+			}			
 		}			
 			
 		
 		
 		
-		return;
+		return false;
 	}
 	/*
 	 * A given predicate name will not appear with different number of arguments.
@@ -238,7 +270,10 @@ public class FOLResolution {
 	
 	// assign new address for potentialQuery
 	private static void makeCopyOfKbSentnece(Map<String, List<Term>> potentialQuery , Map<String, List<Term>> curKbSentence ) {
-		
+		for(Map.Entry<String, List<Term>> m: curKbSentence.entrySet()) {
+			List<Term> curTerms = makeCopyOfCurTerms(m.getValue());
+			potentialQuery.put(m.getKey(), new ArrayList<>(curTerms));
+		}
 	}
 	
 	private static List<Term> makeCopyOfCurTerms(List<Term> curTerms) {
@@ -253,8 +288,10 @@ public class FOLResolution {
 	} 
 	// impoortant!! I think after substitution may still have variable in sentence! 
 	// something like Dog(Lucky)   Dog(y) v Owner(x, y)  in this case, we only can substitute x 
-	private static void substituteProcess(Map<String, Term> substitution, Map<String, List<Term>> potentialQuery) {
+	private static String substituteProcess(Map<String, Term> substitution, Map<String, List<Term>> potentialQuery) {
+		String cnfString = "";
 		for(Map.Entry<String, List<Term>> entryPredicate: potentialQuery.entrySet()) {
+			cnfString = cnfString + entryPredicate.getKey() + ",";
 			for(Term t: entryPredicate.getValue()) {
 				if(substitution.containsKey(t.termName) == true) {
 					
@@ -265,22 +302,32 @@ public class FOLResolution {
 					t.termName = substitution.get(t.termName).termName;
 					
 				}
+				cnfString = cnfString + t.termName + ",";
 			}
 			
 		}
+		return cnfString;
 		
 	}
-//	public static class Predicate{
-//		String predicateName;
-//		List<Term> terms;
-//		public Predicate(String predicateName) {
-//			this.predicateName = predicateName;
-//			terms = new ArrayList<>();
-//		}
-//		private void addterms(Term t) {
-//			terms.add(t);
-//		}
+	
+	
+//	private static String toCNFProcess(Map<String, List<Term>> curQuery) {
+//		
+//		return "";
 //	}
+	
+	
+	public static class Predicate{
+		String predicateName;
+		List<Term> terms;
+		public Predicate(String predicateName) {
+			this.predicateName = predicateName;
+			terms = new ArrayList<>();
+		}
+		private void addterms(Term t) {
+			terms.add(t);
+		}
+	}
 	
 	public static class Term {
 		String termName;
@@ -297,6 +344,13 @@ public class FOLResolution {
 		private void setVariable() {
 			constant = false;
 			variable = true;
+		}
+		
+		private boolean equal(Term other) {
+			if( (other.variable == true && variable == true) || (other.constant == true && constant == true && other.termName.equals(termName) == true) ) {
+				return true;
+			}
+			return false;
 		}
 	}
 	

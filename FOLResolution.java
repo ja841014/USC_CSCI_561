@@ -15,8 +15,8 @@ public class FOLResolution {
 		File outFile = new File("output.txt");
 		FileWriter fileWriter = new FileWriter(outFile);
 		File file = new File("/Users/laicunhao/eclipse-workspace/CS561HW3/src/input.txt");
-		List<Map<String, List<Term>>> query = new ArrayList<>();
-		List<Map<String, List<Term>>> kb = new ArrayList<>();
+		List<List<Predicate>> query = new ArrayList<>();
+		List<List<Predicate>> kb = new ArrayList<>();
 		
 		Scanner scanner = new Scanner(file);
 		int queryNnum = Integer.parseInt(scanner.next());
@@ -27,13 +27,16 @@ public class FOLResolution {
 		
 		// for loop query; query come in  正常來說應該只有一條
 		for(int i = 0; i < query.size(); i++) {
-			Map<String, List<Term>> curQuery = query.get(i);
+			List<Predicate> curQuery = query.get(i);
 			Set<String> seen = new HashSet<>();
+	
 			String recordStr = substituteProcess(new HashMap<>(), curQuery);
+			
 			
 			kb.add(curQuery);
 			boolean findAnswer = resolution(kb, curQuery, seen, recordStr);
 			kb.remove(kb.size() - 1);
+			
 			if(findAnswer == true) {
 				fileWriter.write("TRUE");
 			}
@@ -52,20 +55,22 @@ public class FOLResolution {
 		
 	}
 	
-	
-	private static void processkb(List<Map<String, List<Term>>> kb, int kbNum, Scanner scanner) {
+	// 一條query一條ㄗ
+	private static void processkb(List<List<Predicate>> kb, int kbNum, Scanner scanner) {
 		for(int i = 0; i < kbNum; i++) {
 			
 			String rawKbSentence = scanner.nextLine();
 			String implication = "=>";
-			kb.add(new HashMap<>());
+			
 			// determine whether contain "=>"
 			if(rawKbSentence.contains(implication) == true) {
 				String[] spereateFrontBack = rawKbSentence.split(" => ");
 				transformImplies(kb, i, spereateFrontBack[0], spereateFrontBack[1]);
 			}
 			else {
-				processLiteral(kb.get(i), rawKbSentence);
+				List<Predicate> CurKbSentence = new ArrayList<>();
+				processLiteral(CurKbSentence, rawKbSentence, i);
+				kb.add(CurKbSentence);
 			}
 
 			
@@ -73,35 +78,38 @@ public class FOLResolution {
 	}
 	
 	// process the kb's terms
-	private static void transformImplies(List<Map<String, List<Term>>> kb, int kbIndex ,String front, String back) {
+	private static void transformImplies(List<List<Predicate>> kb, int kbIndex ,String front, String back) {
 		// process front  sperate all '&'
 		String[] data = front.split(" & ");
+		List<Predicate> CurKbSentence = new ArrayList<>();
 		for(int i = 0;i < data.length; i++) {
 			// we have to add negative to those predicate  Play(Peter, x, Lee)
 			String cleanPredicate= addNegative(data[i]);
-			processLiteral(kb.get(kbIndex), cleanPredicate);
+			
+			processLiteral(CurKbSentence, cleanPredicate, kbIndex);
 		}
 		// process back
-		processLiteral(kb.get(kbIndex), back);
-		
-		
+		processLiteral(CurKbSentence, back, kbIndex);
+		kb.add(CurKbSentence);
 	}
 	
-	private static void processLiteral(Map<String, List<Term>> kb, String data) {
+	private static void processLiteral( List<Predicate> CurKbSentence, String data, int kbIndex) {
 		// replace , ( )
 		String replaceWhiteSpace = data.replaceAll("\\,|\\(|\\)", " ");
 		String[] cleanData = replaceWhiteSpace.split("\\s+");
 		
 		// put the predicate first
-		kb.put(cleanData[0], new ArrayList<>());
-		List<Term> tmp = kb.get(cleanData[0]);
+		Predicate curPredicate = new Predicate(cleanData[0]);
+//		kb.put(cleanData[0], new ArrayList<>());
+		List<Term> tmp = curPredicate.terms;
 		
 		// process term
 		for(int j = 1; j < cleanData.length; j++) {
 			
 			Term queryTerm = new Term(cleanData[j]);
-			// if term's first letter is lower case => variable otherwise constant 
+			// if term's first letter is lower case => variable   otherwise constant 
 			if(queryTerm.termName.charAt(0) - 'a' >= 0 && queryTerm.termName.charAt(0) - 'a' < 26) {
+				queryTerm.setName(queryTerm.termName + kbIndex);
 				queryTerm.setVariable();
 			}
 			else {
@@ -109,7 +117,7 @@ public class FOLResolution {
 			}
 			tmp.add(queryTerm);
 		}
-		
+		CurKbSentence.add(curPredicate);
 	}
 	
 	/*
@@ -128,113 +136,174 @@ public class FOLResolution {
 	} 
 	
 	
-	private static void processQuery(List<Map<String, List<Term>>> query, int queryNnum, Scanner scanner) {
+	private static void processQuery(List<List<Predicate>> query, int queryNnum, Scanner scanner) {
+		
 		for(int i = 0; i < queryNnum; i++) {
-			
+			List<Predicate> predicatesList = new ArrayList<>();
 			String rawQuery = scanner.next();
 			
 			String replaceWhiteSpace = rawQuery.replaceAll("\\,|\\(|\\)", " ");
 			String[] data = replaceWhiteSpace.split("\\s+");
+			Predicate curPre = new Predicate("~"+data[0]);
+			
+			
 			System.out.println(data[0]);
 			
-			query.add(new HashMap<>());
-			query.get(i).put(data[0], new ArrayList<>());
+
+			// process terms
+			// when we read from file it always constant
 			for(int j = 1; j < data.length; j++) {
 				
 				Term queryTerm = new Term(data[j]);
 				queryTerm.setConstant();
 				
-				query.get(i).get(data[0]).add(queryTerm);
-			}			
+				curPre.addterms(queryTerm);
+			}		
+			
+			predicatesList.add(curPre);
+			query.add(predicatesList);
 		}
+		
 	}
 	
 	
  	
-	private static boolean resolution(List<Map<String, List<Term>>> kb, Map<String, List<Term>> curQuery,Set<String> seen, String curQueryStr) {
+	private static boolean resolution(List<List<Predicate>> kb, List<Predicate> curQuery, Set<String> seen, String curQueryStr) {
+		
+//		for(List<Predicate> l: kb) {
+//			for(Predicate y : l) {
+//				System.out.print(y.predicateName + "(" );
+//				for(Term t: y.terms) {
+//					System.out.print(t.termName + "," );
+//				}
+//				System.out.print( ") " );
+//			}
+//			System.out.println();
+//		}
+//		System.out.println("******************************");
 		
 		// avoid create a cycle
 		if(seen.contains(curQueryStr)) {
+			System.out.println(curQueryStr);
 			return false;
 		}
 		seen.add(curQueryStr);
 		
 		// for loop kb's sentence to find same predicates
 		for(int j = 0; j < kb.size(); j++) {
-			Map<String, List<Term>> potentialQuery = new HashMap<>();	
+			
+			List<Predicate> potentialQuery = new ArrayList<>();
 			// one sentence from kb
-			Map<String, List<Term>> curKbSentence =  kb.get(j);
-			makeCopyOfKbSentnece(potentialQuery, kb.get(j));
+			List<Predicate> curKbPredicate =  kb.get(j);
+			potentialQuery = makeCopyOfKbSentnece(curKbPredicate) ;
+			int potentialQuerySize = potentialQuery.size();
 			
-			boolean check = false;
-			Map<String, Term> substitution =  new HashMap<>();
-			// for loop a query's predicates, same sentence
-			for(Map.Entry<String, List<Term>> queryEntry : curQuery.entrySet() ) {
-				String curQueryPredicate = queryEntry.getKey();
-				List<Term> curQueryTerms = queryEntry.getValue();
-				// get this query's predicate and add negative
-				// maybe here can do soome optomized
-				String negatedQuery = addNegative(curQueryPredicate);
+//			boolean check = false;
+			
+			
+//			Map<String, List<Integer>> curKbSentenceStats = new HashMap<>();
+//			sentenceStats(curKbSentence, curKbSentenceStats);
+//			
+//			Map<String, List<Integer>> curQuerySentenceStats = new HashMap<>();
+//			sentenceStats(curQuery, curQuerySentenceStats);
+//			
+//			for(Map.Entry<String, List<Integer>> mEntry : curQuerySentenceStats.entrySet()) {
+//				
+//			}
+			
+ 			// loop query predicate
+			for(int i = 0; i < curQuery.size(); i++) {
+				String curQueryPredicateStr = curQuery.get(i).predicateName;
+				Predicate curQueryPredicate = curQuery.get(i);
 				
-				// if predicates same do sth
-				if( curKbSentence.containsKey(negatedQuery) ) {
-					if(check == false) {
-						check = true;
-					}
-					// check argument matched
-					if(isArgsMatch(substitution, curQueryTerms, curKbSentence.get(negatedQuery))) {
-						
-						// if they are same we have to eliminate
-						potentialQuery.remove(negatedQuery);
-						// if the potentialQuery size equal to zeon. means that we find the answer!!
-						if(potentialQuery.size() == 0) {
-							return true;
+				String negatedQuery = addNegative(curQueryPredicateStr);
+				
+				// kb sentence predicate
+				for(int k = 0; k < potentialQuerySize; k++) {
+					Predicate oneKbPredicate = potentialQuery.get(k);
+					if(oneKbPredicate.predicateName.equals(negatedQuery)) {
+						Map<String, Term> substitution =  new HashMap<>();
+						if(isArgsMatch(substitution, curQueryPredicate.terms, oneKbPredicate.terms )) {
+							
+							// remove 掉
+							potentialQuery.remove( oneKbPredicate );
+							
+							// add rest of the query predicate into it. except the i th predicate
+							// To prevent altering the original query value
+							// we will return a new address
+							List<Predicate> newPotentialQuery = addRestOfQueryPredicate( potentialQuery, curQuery, i);
+							
+							
+							
+							if(newPotentialQuery.size() == 0) {
+								return true;
+							}
+							String visitedString =  substituteProcess(substitution, newPotentialQuery);
+							
+							// next add new sentence into orgriginalKB
+							kb.add(newPotentialQuery);
+							// next round
+							boolean findResolution = resolution(kb, newPotentialQuery, seen, visitedString);
+							//remove new sentence
+							kb.remove(kb.size() - 1);
+							potentialQuery.add( oneKbPredicate );
+							
+							// if we get true then we could terminate
+							if(findResolution == true) {
+								return true;
+							}
+							
+							
 						}
+						else {
+							// maybe need use break not sure yet!
+							continue;
+						}
+						
 					}
-					else {
-						break;
-					}
-					
 				}
-				// collect those which are not same into next round query
-				else {
-					// assign a new address for list of terms whose predicate in query is not contained in KB 
-					List<Term> copyCurTerms = makeCopyOfCurTerms(curQueryTerms);
-					potentialQuery.put(curQueryPredicate, copyCurTerms );
-				}				
-				
 			}
-			if(check == true) {
-				check = false;
-				// after for loop we have to do substitution!!
-				String nextQueryStr = substituteProcess(substitution,  potentialQuery);
-				
-				// here might have backtracking pattern
-				
-				// next add new sentence into orgriginalKB
-				kb.add(potentialQuery);
-				// next round
-				boolean findResolution = resolution(kb, potentialQuery, seen, nextQueryStr);
-				//remove new sentence
-				kb.remove(kb.size() - 1);
-				// if we get true then we could terminate
-				if(findResolution == true) {
-					return true;
-				}
-				
-				
-			}
-			else {
-				System.out.println("not Match");
-				continue;
-			}			
 		}			
-			
-		
-		
-		
+//		seen.remove(curQueryStr);
 		return false;
 	}
+	
+	private static void sentenceStats(List<Predicate> predicates, Map<String, List<Integer>> curSentenceStats) {
+		for(int i = 0; i < predicates.size(); i++) {
+			String pName = predicates.get(i).predicateName;
+			if(curSentenceStats.containsKey(pName) == true) {
+				curSentenceStats.get(pName).add(i);
+			}
+			else {
+				curSentenceStats.put(pName, new ArrayList<>());
+				curSentenceStats.get(pName).add(i);
+			}
+		}
+	}
+	
+	// before this do we need to variable standardize?
+	private static List<Predicate>  addRestOfQueryPredicate(List<Predicate> potentialQuery, List<Predicate> curQuery, int index) {
+		List<Predicate> newPotentialQuery = new ArrayList<>();
+		// copy a list pf predicate
+		for(Predicate predicate : potentialQuery) {
+			Predicate tmPredicate =  predicate.clonePredicate();
+			newPotentialQuery.add(tmPredicate);
+		}
+		for(int i = 0; i < curQuery.size(); i++) {
+			if(i == index) {
+				continue;
+			}
+			else {
+//				potentialQuery.add(curQuery.get(i));
+				Predicate tmPredicate =  curQuery.get(i).clonePredicate();
+				newPotentialQuery.add(tmPredicate);
+			}
+		}
+		return newPotentialQuery;
+	}
+	
+
+	
 	/*
 	 * A given predicate name will not appear with different number of arguments.
 	 * Therefore, NOW, predicate name are same
@@ -269,11 +338,14 @@ public class FOLResolution {
 	
 	
 	// assign new address for potentialQuery
-	private static void makeCopyOfKbSentnece(Map<String, List<Term>> potentialQuery , Map<String, List<Term>> curKbSentence ) {
-		for(Map.Entry<String, List<Term>> m: curKbSentence.entrySet()) {
-			List<Term> curTerms = makeCopyOfCurTerms(m.getValue());
-			potentialQuery.put(m.getKey(), new ArrayList<>(curTerms));
+	private static List<Predicate> makeCopyOfKbSentnece(List<Predicate> curKbSentence ) {
+		List<Predicate> copyList = new ArrayList<>();
+		for(Predicate m: curKbSentence ) {
+			Predicate tmp = new Predicate(m.predicateName);
+			tmp.terms = makeCopyOfCurTerms(m.terms);
+			copyList.add(tmp);
 		}
+		return copyList;
 	}
 	
 	private static List<Term> makeCopyOfCurTerms(List<Term> curTerms) {
@@ -288,16 +360,16 @@ public class FOLResolution {
 	} 
 	// impoortant!! I think after substitution may still have variable in sentence! 
 	// something like Dog(Lucky)   Dog(y) v Owner(x, y)  in this case, we only can substitute x 
-	private static String substituteProcess(Map<String, Term> substitution, Map<String, List<Term>> potentialQuery) {
+	private static String substituteProcess(Map<String, Term> substitution, List<Predicate> potentialQuery) {
 		String cnfString = "";
-		for(Map.Entry<String, List<Term>> entryPredicate: potentialQuery.entrySet()) {
-			cnfString = cnfString + entryPredicate.getKey() + ",";
-			for(Term t: entryPredicate.getValue()) {
+		for(Predicate entryPredicate: potentialQuery) {
+			cnfString = cnfString + entryPredicate.predicateName + ",";
+			for(Term t: entryPredicate.terms) {
 				if(substitution.containsKey(t.termName) == true) {
 					
 					// substitute its status
-					t.constant = substitution.get(t.termName).constant;
-					t.variable = substitution.get(t.termName).variable;
+					t.constant = substitution.get(t.termName).constant == true ? true : false;
+					t.variable = substitution.get(t.termName).variable == true ? true : false;
 					// substitute its name
 					t.termName = substitution.get(t.termName).termName;
 					
@@ -311,11 +383,34 @@ public class FOLResolution {
 	}
 	
 	
-//	private static String toCNFProcess(Map<String, List<Term>> curQuery) {
+//	public static class Sentence {
+//		int index;
+//		List<Predicate> predicatesList;
+//		Map<String, List<Integer>> statsMap;
+//
+//		public Sentence(List<Predicate> predicatesList, int index) {
+//			this.predicatesList = predicatesList;
+//			this.index = index;
+//			statsMap = new HashMap<>();
+//
+//		}
 //		
-//		return "";
+//		public void addPredicate(Predicate p) {
+//			predicatesList.add(p);
+//		}
+//		
+//		private void category(String str, int index) {
+//			if(statsMap.containsKey(str)) {
+//				statsMap.get(str).add(index);
+//			}
+//			else {
+//				statsMap.put(str, new ArrayList<>());
+//				statsMap.get(str).add(index);
+//			}
+//		}
+//		
 //	}
-	
+
 	
 	public static class Predicate{
 		String predicateName;
@@ -327,6 +422,20 @@ public class FOLResolution {
 		private void addterms(Term t) {
 			terms.add(t);
 		}
+		
+		private Predicate clonePredicate() {
+			Predicate cloneP = new Predicate(predicateName);
+			List<Term> cloneTerms = new ArrayList<>();
+			for(Term t : terms) {
+				Term cloneT = new Term(t.termName);
+				cloneT.constant = t.constant;
+				cloneT.variable = t.variable;
+				cloneTerms.add(cloneT);
+			}
+			cloneP.terms = cloneTerms;
+			return cloneP;
+		}
+		
 	}
 	
 	public static class Term {
@@ -346,12 +455,18 @@ public class FOLResolution {
 			variable = true;
 		}
 		
+		private void setName(String name) {
+			termName = name;
+		}
+		
 		private boolean equal(Term other) {
 			if( (other.variable == true && variable == true) || (other.constant == true && constant == true && other.termName.equals(termName) == true) ) {
 				return true;
 			}
 			return false;
 		}
+		
+		
 	}
 	
 }
